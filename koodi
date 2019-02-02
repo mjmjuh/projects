@@ -1,3 +1,4 @@
+import pandas as pd
 import geopandas as gpd
 from bokeh.io import output_file, show
 from bokeh.models import GeoJSONDataSource, HoverTool, LinearColorMapper, Title
