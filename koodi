@@ -1,23 +1,9 @@
-import pandas as pd
 import geopandas as gpd
-import matplotlib.pyplot as plt
-import gmaps
-import fiona
-import numpy as np
-import mplcursors
-import urllib.request as request
-
-#bokeh
-from bokeh.palettes import BuPu
 from bokeh.io import output_file, show
-from bokeh.models import (ColumnDataSource, GMapOptions, GeoJSONDataSource, HoverTool,
-                          LinearColorMapper, ColorBar, LogTicker, LabelSet, Label, Title)
-from bokeh.plotting import gmap, figure, save
-from bokeh.resources import CDN
-from shapely.geometry import Polygon, Point, MultiPoint, MultiPolygon
-from shapely.prepared import prep
+from bokeh.models import GeoJSONDataSource, HoverTool, LinearColorMapper, Title
+from bokeh.plotting import figure, save
 
-gmaps.configure(api_key='') # API key
+#gmaps.configure(api_key='') # API key
 
 geodata = "C:/Users/Markus Juhonen/Documents/PKS_postinumeroalueet_2017_shp.shx"
 geodata = gpd.read_file(geodata)
@@ -25,11 +11,22 @@ geodata = gpd.read_file(geodata)
 paavo = "C:/Users/Markus Juhonen/Documents/paavo_9_koko.csv"
 paavo = pd.read_csv(paavo, sep=';', encoding = "unicode_escape")
 
+
+
 #postinumeroalueesta vain numero jäljelle
 paavo['Postinumeroalue'] = paavo['Postinumeroalue'].str.split(' ').str[0]
 #'Posno' muutetaan 'Postinumeroalue'
 geodata.columns = geodata.columns.str.replace('Posno','Postinumeroalue')
 geodata1 = geodata.iloc[:, [0,1,3,6,7]]
+
+
+
+#yhdistetään tedostot
+kokodata = gpd.GeoDataFrame(pd.merge(paavo, geodata1, on='Postinumeroalue'))
+kokodata['Lapsitaloudet_prosentti'] = kokodata['Lapsitaloudet_2017'] / kokodata['Taloudet_yhteensä_2017'] *100
+kokodata['alpha']=(kokodata['Talouksien keskitulot, 2016 (TR)']-kokodata['Talouksien keskitulot, 2016 (TR)'].min())/(kokodata['Talouksien keskitulot, 2016 (TR)'].max()-kokodata['Talouksien keskitulot, 2016 (TR)'].min())
+
+
 
 # aineisto jaettuna kunnittain
 helsinki = kokodata.loc[kokodata['Kunta_nro'] == '091']
