@@ -1,0 +1,78 @@
+import pandas as pd
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import gmaps
+import fiona
+import numpy as np
+import mplcursors
+
+#bokeh
+from bokeh.palettes import BuPu
+from bokeh.io import output_file, show
+from bokeh.models import (ColumnDataSource, GMapOptions, GeoJSONDataSource, HoverTool,
+                          LinearColorMapper, ColorBar, LogTicker, LabelSet, Label, Title)
+from bokeh.plotting import gmap, figure, save
+from bokeh.resources import CDN
+from shapely.geometry import Polygon, Point, MultiPoint, MultiPolygon
+from shapely.prepared import prep
+
+gmaps.configure(api_key='') # API key
+
+geodata = "C:/Users/Markus Juhonen/Documents/PKS_postinumeroalueet_2017_shp.shx"
+geodata = gpd.read_file(geodata)
+
+paavo = "C:/Users/Markus Juhonen/Documents/paavo_9_koko.csv"
+paavo = pd.read_csv(paavo, sep=';', encoding = "unicode_escape")
+
+#postinumeroalueesta vain numero jäljelle
+paavo['Postinumeroalue'] = paavo['Postinumeroalue'].str.split(' ').str[0]
+#'Posno' muutetaan 'Postinumeroalue'
+geodata.columns = geodata.columns.str.replace('Posno','Postinumeroalue')
+geodata1 = geodata.iloc[:, [0,1,3,6,7]]
+
+# aineisto jaettuna kunnittain
+helsinki = kokodata.loc[kokodata['Kunta_nro'] == '091']
+espoo = kokodata.loc[kokodata['Kunta_nro'] == '049']
+vantaa = kokodata.loc[kokodata['Kunta_nro'] == '092']
+
+# aineisto jaettuna kunnittain
+helsinki = GeoJSONDataSource(geojson=helsinki.to_json())
+espoo = GeoJSONDataSource(geojson=espoo.to_json())
+vantaa = GeoJSONDataSource(geojson=vantaa.to_json())
+
+# omat väripaletit kunnille
+custom_colors1 = ['#f7fbff','#deebf7','#c6dbef','#9ecae1','#6baed6','#4292c6','#2171b5','#08519c','#08306b']
+custom_colors2 = ['#f7fcf5','#e5f5e0','#c7e9c0','#a1d99b','#74c476','#41ab5d','#238b45','#006d2c','#00441b']
+custom_colors3 = ['#fff5eb','#fee6ce','#fdd0a2','#fdae6b','#fd8d3c','#f16913','#d94801','#a63603','#7f2704']
+color_mapper1 = LinearColorMapper(palette=custom_colors1)
+color_mapper2 = LinearColorMapper(palette=custom_colors2)
+color_mapper3 = LinearColorMapper(palette=custom_colors3)
+
+alpha = 'alpha'
+# luodaan kuvaaja
+TOOLS = "pan,wheel_zoom,box_zoom,reset,hover,save"
+p = figure(title="Lapsitaloudet%, Pk-seutu", tools=TOOLS, x_axis_location=None, y_axis_location=None,
+          plot_width=850, plot_height=1000)
+p.title.text_font_size = '24pt'
+p.grid.grid_line_color = None
+p.add_layout(Title(text="Paavo Tilastokeskus; HSY 2017 / 2018 ", align="left", ), "above")
+
+# lisätään postinumeroalueet ja tiedot
+p.patches('xs','ys', legend="Helsinki", source=helsinki, line_color='black', line_width=0.2, fill_alpha=alpha,
+          fill_color={'field': 'Lapsitaloudet_prosentti', 'transform': color_mapper1})
+p.patches('xs','ys', legend="Espoo", source=espoo, line_color='black', line_width=0.2, fill_alpha=alpha,
+          fill_color={'field': 'Lapsitaloudet_prosentti', 'transform': color_mapper2})
+p.patches('xs','ys', legend="Vantaa", source=vantaa, line_color='black', line_width=0.2, fill_alpha=alpha,
+          fill_color={'field': 'Lapsitaloudet_prosentti', 'transform': color_mapper3})
+
+# toiminnallisuutta kuvaajaan
+hover = p.select_one(HoverTool)
+hover.point_policy = "follow_mouse"
+hover.tooltips = [("Nimi", "@Nimi"),("Postinumero", "@Postinumeroalue"),
+                  ("Lapsitaloudet%", "@Lapsitaloudet_prosentti"),("alpha", "@alpha")]
+
+
+#tulostus
+output_file = "C:/Users/Markus Juhonen/Documents/pkseutu.html"
+save(p, output_file)
+show(p)
