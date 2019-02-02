@@ -5,6 +5,7 @@ import gmaps
 import fiona
 import numpy as np
 import mplcursors
+import urllib.request as request
 
 #bokeh
 from bokeh.palettes import BuPu
